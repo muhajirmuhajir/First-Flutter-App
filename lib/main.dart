@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 
@@ -10,13 +12,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Welcome Flutter',
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('welcome to flutter'),
-          backgroundColor: Colors.amber,
-        ),
-        body: Center(child: RandomWordsState()),
-      ),
+      theme: ThemeData(primaryColor: Colors.white),
+      home: RandomWordsState(),
     );
   }
 }
@@ -30,15 +27,44 @@ class RandomWordsState extends StatefulWidget {
 
 class _RandomWordsState extends State<RandomWordsState> {
   final List<WordPair> _suggestions = <WordPair>[];
+  final Set<WordPair> _saved = Set<WordPair>();
   final TextStyle _biggerFont = TextStyle(fontSize: 18);
+
+  void _pushSaved() {
+    Navigator.of(context)
+        .push(MaterialPageRoute<Void>(builder: (BuildContext context) {
+      final Iterable<ListTile> tiles = _saved.map((WordPair pair) {
+        return ListTile(
+          title: Text(
+            pair.asCamelCase,
+            style: _biggerFont,
+          ),
+        );
+      });
+      final List<Widget> divided =
+          ListTile.divideTiles(tiles: tiles, context: context).toList();
+
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('saved suggestion'),
+        ),
+        body: ListView(
+          children: divided,
+        ),
+      );
+    }));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Name Generator'),
-      ),
       body: _buildSuggestions(),
+      appBar: AppBar(
+        title: Text('Name Generators'),
+        actions: <Widget>[
+          IconButton(icon: Icon(Icons.list), onPressed: _pushSaved)
+        ],
+      ),
     );
   }
 
@@ -60,11 +86,25 @@ class _RandomWordsState extends State<RandomWordsState> {
   }
 
   Widget _buildRow(WordPair pair) {
+    final bool alreadySaved = _saved.contains(pair);
     return ListTile(
       title: Text(
         pair.asCamelCase,
         style: _biggerFont,
       ),
+      trailing: Icon(
+        alreadySaved ? Icons.favorite : Icons.favorite_border,
+        color: alreadySaved ? Colors.red : null,
+      ),
+      onTap: () {
+        setState(() {
+          if (alreadySaved) {
+            _saved.remove(pair);
+          } else {
+            _saved.add(pair);
+          }
+        });
+      },
     );
   }
 }
